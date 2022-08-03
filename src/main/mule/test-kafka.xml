@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:kafka="http://www.mulesoft.org/schema/mule/kafka"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/kafka http://www.mulesoft.org/schema/mule/kafka/current/mule-kafka.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+
+	<kafka:consumer-config name="Apache_Kafka_Consumer_configuration" doc:name="Apache Kafka Consumer configuration" doc:id="c244f173-54c7-46ba-bdcc-7dc00f8f152f" >
+		<kafka:consumer-sasl-plain-connection groupId="test-consumer-group" username="$ConnectionString" password="Endpoint=sb://heruwala1.servicebus.windows.net/;SharedAccessKeyName=sender;SharedAccessKey=k2mRSS9vhbje66/O4whh1YITKuYg0wgN4Lcc0ahBU3Q=;EntityPath=myhub">
+			<tls:context >
+				<tls:trust-store type="jks" />
+			</tls:context>
+			<kafka:bootstrap-servers >
+				<kafka:bootstrap-server value="heruwala1.servicebus.windows.net:9093" />
+			</kafka:bootstrap-servers>
+			<kafka:topic-patterns >
+				<kafka:topic-pattern value="myhub" />
+			</kafka:topic-patterns>
+		</kafka:consumer-sasl-plain-connection>
+	</kafka:consumer-config>
+	<kafka:producer-config name="Apache_Kafka_Producer_configuration" doc:name="Apache Kafka Producer configuration" doc:id="95cebe67-25b7-4155-8528-f415a31952ac" >
+		<kafka:producer-sasl-plain-connection username="$ConnectionString" password="Endpoint=sb://heruwala1.servicebus.windows.net/;SharedAccessKeyName=sender;SharedAccessKey=k2mRSS9vhbje66/O4whh1YITKuYg0wgN4Lcc0ahBU3Q=;EntityPath=myhub">
+			<tls:context >
+				<tls:trust-store type="jks" />
+			</tls:context>
+			<kafka:bootstrap-servers >
+				<kafka:bootstrap-server value="heruwala1.servicebus.windows.net:9093" />
+			</kafka:bootstrap-servers>
+		</kafka:producer-sasl-plain-connection>
+	</kafka:producer-config>
+	<flow name="kafka-publisher" doc:id="2a2f7034-3f67-404f-97d6-d2c0ee6bbf29" >
+		<scheduler doc:name="Scheduler" doc:id="c9c49672-e40c-4d42-9b67-c9d478e7668e" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="2" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<ee:transform doc:name="Transform Message" doc:id="e46196c4-1769-45ef-af5a-8e0e89709128" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	testPayload: {
+		eventName: "retailer-created",
+		eventData: {
+			retailerName: "Dhaval Heruwala",
+			retailerId: 123,
+			retailerAddress: {
+				line1: "3624 Market St",
+				city: "Philadelphia",
+				State: "PA"
+			}
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<kafka:publish doc:name="Publish" doc:id="5cd30e06-e8e4-4baa-8524-e32a183ce8b3" topic="myhub" config-ref="Apache_Kafka_Producer_configuration"/>
+		<logger level="INFO" doc:name="Logger" doc:id="3facd0a8-46ab-45ad-9e61-3b441ba73325" message="#[payload]"/>
+	</flow>
+	<flow name="kafka-listener" doc:id="6410057e-91d6-4451-88e6-8aa513a4961e">
+		<kafka:message-listener doc:name="Message listener" doc:id="dc2cd4b3-93ba-4940-8fd5-b9093d96814d" config-ref="Apache_Kafka_Consumer_configuration"/>
+		<logger level="INFO" doc:name="Logger" doc:id="56d16327-bb05-44f2-9ff7-8ab3379a122e" message="#[payload]"/>
+	</flow>
+</mule>
